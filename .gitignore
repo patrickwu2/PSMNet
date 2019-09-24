@@ -1,5 +1,9 @@
+.*
+!/.gitignore
+*~
+*__pycache__/
 
-*.pyc
+*.Pyc
 
 checkpoint/
 
