@@ -23,7 +23,7 @@ parser.add_argument('--maxdisp', type=int, default=192, help='max diparity')
 parser.add_argument('--datadir', default="/tmp2/tsunghan/disparity_data/scannet_disparity_data/"
                     , help='data directory')
 parser.add_argument('--cuda', type=int, default=4, help='gpu number')
-parser.add_argument('--batch-size', type=int, default=4, help='batch size')
+parser.add_argument('--batch-size', type=int, default=16, help='batch size')
 parser.add_argument('--validate-batch-size', type=int, default=2, help='batch size')
 parser.add_argument('--log-per-step', type=int, default=1, help='log per step')
 parser.add_argument('--save-per-epoch', type=int, default=1, help='save model per epoch')

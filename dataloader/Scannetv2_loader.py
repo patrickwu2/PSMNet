@@ -59,9 +59,9 @@ class Scannetv2(Dataset):
         return data
 
     def customed_collate_fn(self, batch):
-        trans_height, trans_width = 480, 640
+        trans_height, trans_width = 240, 320
         tensor_transform = transforms.Compose([
-            transforms.Resize((trans_height, trans_width)),
+            # transforms.Resize((trans_height, trans_width)),
             transforms.ToTensor(),
         ])
         def _transform_fn(key, value):

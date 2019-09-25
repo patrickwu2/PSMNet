@@ -17,7 +17,7 @@ class CostNet(nn.Module):
 
     def forward(self, inputs):
         conv2_out, conv4_out = self.cnn(inputs)           # [B, 64, 1/4H, 1/4W], [B, 128, 1/4H, 1/4W]
-
+        
         spp_out = self.spp(conv4_out)                    # [B, 128, 1/4H, 1/4W]
         out = torch.cat([conv2_out, conv4_out, spp_out], dim=1)  # [B, 320, 1/4H, 1/4W]
         out = self.fusion(out)                            # [B, 32, 1/4H, 1/4W]
@@ -30,16 +30,16 @@ class SPP(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.branch1 = self.__make_branch(kernel_size=64, stride=64)
-        self.branch2 = self.__make_branch(kernel_size=32, stride=32)
-        self.branch3 = self.__make_branch(kernel_size=16, stride=16)
-        self.branch4 = self.__make_branch(kernel_size=8, stride=8)
+        self.branch1 = self.__make_branch(kernel_size=32, stride=32)
+        self.branch2 = self.__make_branch(kernel_size=16, stride=16)
+        self.branch3 = self.__make_branch(kernel_size=8, stride=8)
+        self.branch4 = self.__make_branch(kernel_size=4, stride=4)
 
     def forward(self, inputs):
 
         out_size = inputs.size(2), inputs.size(3)
+
         branch1_out = F.upsample(self.branch1(inputs), size=out_size, mode='bilinear')  # [B, 32, 1/4H, 1/4W]
-        # print('branch1_out')
         # print(branch1_out[0, 0, :3, :3])
         branch2_out = F.upsample(self.branch2(inputs), size=out_size, mode='bilinear')  # [B, 32, 1/4H, 1/4W]
         branch3_out = F.upsample(self.branch3(inputs), size=out_size, mode='bilinear')  # [B, 32, 1/4H, 1/4W]
