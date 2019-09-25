@@ -10,36 +10,41 @@ import numpy as np
 
 class Scannetv2(Dataset):
 
-    def __init__(self, root_path, data_list):
+    def __init__(self, root_path, data_list, mode):
         super().__init__()
+        if mode not in {'train', 'test', 'val'}:
+            raise ValueError('Only support train, test and val mode.')
+
+        self.mode = mode
         self.root_path = root_path
         self.data_list = data_list
-        #scene_file = "dataloader/data_list/scannetv2/scene_name_list.txt"
 
         self.left_imgs = []
         self.right_imgs = []
         self.disp_imgs = []
 
-        self._load_training_path()
+        self._load_data_path()
 
-    def _load_training_path(self):
+    def _load_data_path(self):
         # TODO : split scene name list for training, testing, validation
-        #scene_file = os.path.join(self.data_list, "scene_name_list.txt")
-        #scene_list = np.loadtxt(scene_file,dtype='str')
-        scene_list = ['scene0165_01']
+        scene_file = os.path.join(self.data_list, f"{self.mode}_list.txt")
+        scene_list = np.loadtxt(scene_file,dtype='str')
 
         for scene_name in tqdm(scene_list, desc='Load data path', leave=True):
             img_file = os.path.join(self.data_list, scene_name, "image_name_list.txt")
             img_list = np.loadtxt(img_file, dtype='str')
+
             left_path = [os.path.join(self.root_path, scene_name, 'left', f'{x}.png') for x in img_list]
             right_path = [os.path.join(self.root_path, scene_name, 'right', f'{x}.png') for x in img_list]
-            disp_path = [os.path.join(self.root_path, scene_name, 'mesh_images', 
-                                            f'{x}_mesh_depth.png') for x in img_list]
-            
+           
             self.left_imgs += left_path
             self.right_imgs += right_path
-            self.disp_imgs += disp_path
-        
+         
+            if self.mode != 'test':
+                disp_path = [os.path.join(self.root_path, scene_name, 'mesh_images', 
+                                                f'{x}_mesh_depth.png') for x in img_list]
+                self.disp_imgs += disp_path
+            
         self.len = len(self.left_imgs)
 
     def __len__(self):
@@ -49,7 +54,8 @@ class Scannetv2(Dataset):
         data = {}
         data['left'] = Image.open(self.left_imgs[idx])
         data['right'] = Image.open(self.right_imgs[idx])
-        data['disp'] = Image.open(self.disp_imgs[idx])
+        if self.mode != 'test':
+            data['disp'] = Image.open(self.disp_imgs[idx])
         return data
 
     def customed_collate_fn(self, batch):
