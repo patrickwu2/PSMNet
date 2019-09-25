@@ -2,7 +2,7 @@ import argparse
 import os
 import shutil
 import numpy as np
-
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -26,7 +26,7 @@ parser.add_argument('--logdir', default='log/runs', help='log directory')
 parser.add_argument('--datadir', default="/tmp2/tsunghan/disparity_data/scannet_disparity_data/"
                     , help='data directory')
 parser.add_argument('--cuda', type=int, default=4, help='gpu number')
-parser.add_argument('--batch-size', type=int, default=1, help='batch size')
+parser.add_argument('--batch-size', type=int, default=4, help='batch size')
 parser.add_argument('--validate-batch-size', type=int, default=2, help='batch size')
 parser.add_argument('--log-per-step', type=int, default=1, help='log per step')
 parser.add_argument('--save-per-epoch', type=int, default=1, help='save model per epoch')
@@ -35,7 +35,7 @@ parser.add_argument('--model-path', default=None, help='path of model to load')
 # parser.add_argument('--start-step', type=int, default=0, help='number of steps at starting')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--num-epochs', type=int, default=300, help='number of training epochs')
-parser.add_argument('--num-workers', type=int, default=8, help='num workers in loading data')
+parser.add_argument('--num-workers', type=int, default=16, help='num workers in loading data')
 # parser.add_argument('--')
 
 args = parser.parse_args()
@@ -56,8 +56,12 @@ def main(args):
     #train_transform = T.Compose([RandomCrop([256, 512]), Normalize(mean, std), ToTensor()])
     #train_dataset = KITTI2015(args.datadir, mode='train', transform=train_transform)
     #train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    train_dataset =  Scannetv2(args.datadir, "dataloader/data_list/scannetv2")
+    train_dataset =  Scannetv2(args.datadir, "dataloader/data_list/scannetv2", 'train')
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=train_dataset.customed_collate_fn)
+ 
+    validate_dataset =  Scannetv2(args.datadir, "dataloader/data_list/scannetv2", 'val')
+    validate_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers, collate_fn=train_dataset.customed_collate_fn)
+
 
     #validate_transform = T.Compose([Normalize(mean, std), ToTensor(), Pad(384, 1248)])
     #validate_dataset = KITTI2015(args.datadir, mode='validate', transform=validate_transform)
@@ -86,7 +90,7 @@ def main(args):
         step = train(model, train_loader, optimizer, criterion, step)
         adjust_lr(optimizer, epoch)
 
-        if epoch % args.save_per_epoch == -1:
+        if epoch % args.save_per_epoch == 0:
             model.eval()
             error = validate(model, validate_loader, epoch)
             best_error = save(model, optimizer, epoch, step, error, best_error)
@@ -150,7 +154,7 @@ def train(model, train_loader, optimizer, criterion, step):
     '''
     train one epoch
     '''
-    for batch in train_loader:
+    for batch in tqdm(train_loader):
         step += 1
         optimizer.zero_grad()
 
@@ -176,7 +180,6 @@ def train(model, train_loader, optimizer, criterion, step):
             writer.add_scalar('loss/loss3', loss3, step)
             writer.add_scalar('loss/total_loss', total_loss, step)
             print('step: {:05} | total loss: {:.5} | loss1: {:.5} | loss2: {:.5} | loss3: {:.5}'.format(step, total_loss.item(), loss1.item(), loss2.item(), loss3.item()))
-
     return step
 
 
