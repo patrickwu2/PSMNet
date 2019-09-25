@@ -5,10 +5,7 @@
 
 *.Pyc
 
-checkpoint/
-
-log/
+experiment/
 
 test.py
 
-result/
