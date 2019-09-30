@@ -20,11 +20,11 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='PSMNet')
 parser.add_argument('--maxdisp', type=int, default=192, help='max diparity')
-parser.add_argument('--datadir', default="/tmp2/tsunghan/disparity_data/scannet_disparity_data/"
+parser.add_argument('--datadir', default="/work/kaikai4n/resized_stereo/"
                     , help='data directory')
 parser.add_argument('--cuda', type=int, default=4, help='gpu number')
-parser.add_argument('--batch-size', type=int, default=16, help='batch size')
-parser.add_argument('--validate-batch-size', type=int, default=2, help='batch size')
+parser.add_argument('--batch-size', type=int, default=14, help='batch size')
+parser.add_argument('--validate-batch-size', type=int, default=4, help='batch size')
 parser.add_argument('--log-per-step', type=int, default=1, help='log per step')
 parser.add_argument('--save-per-epoch', type=int, default=1, help='save model per epoch')
 parser.add_argument('--experiment-dir', default='experiment', help='directory where save model, log, images')
@@ -53,7 +53,7 @@ log_f = open(os.path.join(log_dir, log_file_name), 'w')
 # imagenet
 mean = [0.406, 0.456, 0.485]
 std = [0.225, 0.224, 0.229]
-device_ids = [0, 1, 2, 3]
+device_ids = [0]
 
 device = torch.device('cuda')
 

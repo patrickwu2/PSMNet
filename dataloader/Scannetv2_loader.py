@@ -41,8 +41,8 @@ class Scannetv2(Dataset):
             self.right_imgs += right_path
          
             if self.mode != 'test':
-                disp_path = [os.path.join(self.root_path, scene_name, 'mesh_images', 
-                                                f'{x}_mesh_depth.png') for x in img_list]
+                disp_path = [os.path.join(self.root_path, scene_name, 'disp', 
+                                                f'{x}_mesh_depth.tiff') for x in img_list]
                 self.disp_imgs += disp_path
             
         self.len = len(self.left_imgs)
@@ -67,6 +67,7 @@ class Scannetv2(Dataset):
         def _transform_fn(key, value):
             if key == 'disp':
                 value = tensor_transform(value).squeeze(0).type(torch.float32)
+                value[ value == float("Inf") ] = 0
                 value /= 4000.00
             else:
                 value = tensor_transform(value)
@@ -89,6 +90,3 @@ if __name__ == "__main__":
     for batch in tqdm(test_loader):
         #print (batch)
         exit()
-
-    
-
