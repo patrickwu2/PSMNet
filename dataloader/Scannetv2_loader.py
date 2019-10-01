@@ -68,7 +68,6 @@ class Scannetv2(Dataset):
             if key == 'disp':
                 value = tensor_transform(value).squeeze(0).type(torch.float32)
                 value[ value == float("Inf") ] = 0
-                value /= 4000.00
             else:
                 value = tensor_transform(value)
                 #value = value.permute(2, 1, 0)
