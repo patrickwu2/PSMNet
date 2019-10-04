@@ -25,7 +25,17 @@ parser.add_argument('--datadir', default="/work/kaikai4n/resized_stereo/"
                     , help='data directory')
 parser.add_argument('--output-dir', required=True)
 parser.add_argument('--batch-size', type=int, default=8)
+parser.add_argument('--train_dataset', default=False, action='store_true', help='Evaluate training data results.')
+parser.add_argument('--val_dataset', default=False, action='store_true', help='Evaluate validation data results.')
+parser.add_argument('--no_test_dataset', default=False, action='store_true', help='Not to evaluate testing data results.')
 args = parser.parse_args()
+args.modes = set()
+if args.train_dataset:
+    args.modes.add('train')
+if args.val_dataset:
+    args.modes.add('val')
+if not args.no_test_dataset:
+    args.modes.add('test')
 
 
 #mean = [0.406, 0.456, 0.485]
@@ -33,6 +43,10 @@ args = parser.parse_args()
 device_ids = [0]
 device = torch.device('cuda:{}'.format(device_ids[0]))
 
+def get_dataloader(root_dir, data_dir, mode):
+    dataset =  Scannetv2(root_dir, data_dir, mode)
+    loader = DataLoader(dataset, batch_size=args.batch_size, num_workers=8, collate_fn=dataset.customed_collate_fn)
+    return loader
 
 def main():
 
@@ -55,28 +69,26 @@ def main():
     print('3px-error: {}%'.format(state['error']))
 
     model.eval()
- 
-    val_dataset =  Scannetv2(args.datadir, "dataloader/data_list/scannetv2", 'val')
-    validate_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=8, collate_fn=val_dataset.customed_collate_fn)
 
-    N = 0
-    for batch in tqdm(validate_loader):
-        left_img = batch['left'].to(device)
-        right_img = batch['right'].to(device)
-        target_disp = batch['disp'].to(device)
+    for mode in args.modes:
+        loader = get_dataloader(args.datadir, "dataloader/data_list/scannetv2", mode)
+        for batch in tqdm(loader):
+            left_img = batch['left'].to(device)
+            right_img = batch['right'].to(device)
+            target_disp = batch['disp'].to(device)
 
-        with torch.no_grad():
-            _, _, disp = model(left_img, right_img)
+            with torch.no_grad():
+                _, _, disp = model(left_img, right_img)
 
-        disp_img = disp.data.cpu().numpy()
-        for img, (scene_name, img_num) in zip(disp_img, batch['name']):
-            save_path = os.path.join(
-                args.output_dir, 
-                scene_name,
-                f'disparity_{img_num}.npy'
-            )
-            path = Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-            np.save(save_path, disp_img)
+            disp_img = disp.data.cpu().numpy()
+            for img, (scene_name, img_num) in zip(disp_img, batch['name']):
+                save_path = os.path.join(
+                    args.output_dir, 
+                    scene_name,
+                    f'{img_num}.npy'
+                )
+                path = Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+                np.save(save_path, disp_img)
 
 if __name__ == '__main__':
     main()
