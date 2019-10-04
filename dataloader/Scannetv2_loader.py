@@ -19,6 +19,7 @@ class Scannetv2(Dataset):
         self.root_path = root_path
         self.data_list = data_list
 
+        self.img_names = []
         self.left_imgs = []
         self.right_imgs = []
         self.disp_imgs = []
@@ -34,9 +35,11 @@ class Scannetv2(Dataset):
             img_file = os.path.join(self.data_list, scene_name, "image_name_list.txt")
             img_list = np.loadtxt(img_file, dtype='str')
 
+            img_name = [(scene_name, x) for x in img_list]
             left_path = [os.path.join(self.root_path, scene_name, 'left', f'{x}.png') for x in img_list]
             right_path = [os.path.join(self.root_path, scene_name, 'right', f'{x}.png') for x in img_list]
            
+            self.img_names += img_name
             self.left_imgs += left_path
             self.right_imgs += right_path
          
@@ -52,6 +55,7 @@ class Scannetv2(Dataset):
 
     def __getitem__(self, idx):
         data = {}
+        data['name'] = self.img_names[idx]
         data['left'] = Image.open(self.left_imgs[idx])
         data['right'] = Image.open(self.right_imgs[idx])
         if self.mode != 'test':
@@ -75,7 +79,10 @@ class Scannetv2(Dataset):
         keys = list(batch[0].keys())
         values = {}
         for key in keys:
-            this_value = torch.stack([_transform_fn(key, one_batch[key]) for one_batch in batch], 0, out=None)
+            if key == 'name':
+                this_value = [one_batch[key] for one_batch in batch]
+            else:
+                this_value = torch.stack([_transform_fn(key, one_batch[key]) for one_batch in batch], 0, out=None)
             values[key] = this_value
         return values
 
