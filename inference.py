@@ -88,7 +88,8 @@ def main():
                     f'{img_num}.npy'
                 )
                 path = Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-                np.save(save_path, disp_img)
+                #Image.fromarray(img).convert('F').save(save_path)
+                np.save(save_path, img)
 
 if __name__ == '__main__':
     main()
