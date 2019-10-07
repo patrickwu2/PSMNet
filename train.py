@@ -62,10 +62,10 @@ def main(args):
     #train_transform = T.Compose([RandomCrop([256, 512]), Normalize(mean, std), ToTensor()])
     #train_dataset = KITTI2015(args.datadir, mode='train', transform=train_transform)
     #train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    train_dataset =  Scannetv2(args.datadir, "dataloader/data_list/scannetv2", 'train')
+    train_dataset =  Scannetv2(args.datadir, "dataloader/data_list/scannet_train_list.csv")
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=train_dataset.customed_collate_fn)
  
-    val_dataset =  Scannetv2(args.datadir, "dataloader/data_list/scannetv2", 'val')
+    val_dataset =  Scannetv2(args.datadir, "dataloader/data_list/scannet_test_list.csv")
     validate_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.num_workers, collate_fn=val_dataset.customed_collate_fn)
 
 

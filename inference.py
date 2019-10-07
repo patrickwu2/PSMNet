@@ -43,8 +43,8 @@ if not args.no_test_dataset:
 device_ids = [0]
 device = torch.device('cuda:{}'.format(device_ids[0]))
 
-def get_dataloader(root_dir, data_dir, mode):
-    dataset =  Scannetv2(root_dir, data_dir, mode)
+def get_dataloader(root_dir, data_dir):
+    dataset =  Scannetv2(root_dir, data_dir)
     loader = DataLoader(dataset, batch_size=args.batch_size, num_workers=8, collate_fn=dataset.customed_collate_fn)
     return loader
 
@@ -71,7 +71,7 @@ def main():
     model.eval()
 
     for mode in args.modes:
-        loader = get_dataloader(args.datadir, "dataloader/data_list/scannetv2", mode)
+        loader = get_dataloader(args.datadir, "dataloader/data_list/scannetv2")
         for batch in tqdm(loader):
             left_img = batch['left'].to(device)
             right_img = batch['right'].to(device)
