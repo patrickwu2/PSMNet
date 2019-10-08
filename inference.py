@@ -26,14 +26,11 @@ parser.add_argument('--datadir', default="/work/kaikai4n/resized_stereo/"
 parser.add_argument('--output-dir', required=True)
 parser.add_argument('--batch-size', type=int, default=8)
 parser.add_argument('--train_dataset', default=False, action='store_true', help='Evaluate training data results.')
-parser.add_argument('--val_dataset', default=False, action='store_true', help='Evaluate validation data results.')
 parser.add_argument('--no_test_dataset', default=False, action='store_true', help='Not to evaluate testing data results.')
 args = parser.parse_args()
 args.modes = set()
 if args.train_dataset:
     args.modes.add('train')
-if args.val_dataset:
-    args.modes.add('val')
 if not args.no_test_dataset:
     args.modes.add('test')
 
@@ -43,8 +40,8 @@ if not args.no_test_dataset:
 device_ids = [0]
 device = torch.device('cuda:{}'.format(device_ids[0]))
 
-def get_dataloader(root_dir, data_dir):
-    dataset =  Scannetv2(root_dir, data_dir)
+def get_dataloader(root_dir, data_list):
+    dataset =  Scannetv2(root_dir, data_list)
     loader = DataLoader(dataset, batch_size=args.batch_size, num_workers=8, collate_fn=dataset.customed_collate_fn)
     return loader
 
@@ -71,7 +68,10 @@ def main():
     model.eval()
 
     for mode in args.modes:
-        loader = get_dataloader(args.datadir, "dataloader/data_list/scannetv2")
+        loader = get_dataloader(
+            args.datadir, 
+            f"dataloader/data_list/scannet_{mode}_list.csv"
+        )
         for batch in tqdm(loader):
             left_img = batch['left'].to(device)
             right_img = batch['right'].to(device)
