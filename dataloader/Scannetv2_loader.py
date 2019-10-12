@@ -76,7 +76,7 @@ class Scannetv2(Dataset):
                 value = tensor_transform(value).squeeze(0).type(torch.float32)
                 value[value == float("Inf")] = 0
             else:
-                value = tensor_transform(value)
+                value = tensor_transform(value).type(torch.float32)
             return value
         keys = list(batch[0].keys())
         values = {}
