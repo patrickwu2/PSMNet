@@ -12,7 +12,7 @@ class StackedHourglass(nn.Module):
         super().__init__()
 
         self.conv0 = nn.Sequential(
-            Conv3dBn(in_channels=128, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1, use_relu=True),
+            Conv3dBn(in_channels=96, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1, use_relu=True),
             Conv3dBn(in_channels=64, out_channels=32, kernel_size=3, stride=1, padding=1, dilation=1, use_relu=True)
         )
         self.conv1 = nn.Sequential(
