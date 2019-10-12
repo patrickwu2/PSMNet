@@ -1,4 +1,3 @@
-import argparse
 import os
 import shutil
 from PIL import Image
@@ -7,35 +6,17 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision.transforms as T
 from torch.utils.data import DataLoader
+from args import get_args
 from models.PSMnet import PSMNet
 from models.smoothloss import SmoothL1Loss
 from dataloader.Scannetv2_loader import Scannetv2
 
 import matplotlib
-matplotlib.use('agg')
 import matplotlib.pyplot as plt
+matplotlib.use('agg')
 
-
-parser = argparse.ArgumentParser(description='PSMNet')
-parser.add_argument('--maxdisp', type=int, default=192, help='max diparity')
-parser.add_argument('--datadir', default="/work/kaikai4n/resized_stereo/"
-                    , help='data directory')
-parser.add_argument('--cuda', type=int, default=4, help='gpu number')
-parser.add_argument('--batch-size', type=int, default=14, help='batch size')
-parser.add_argument('--validate-batch-size', type=int, default=4, help='batch size')
-parser.add_argument('--log-per-step', type=int, default=1, help='log per step')
-parser.add_argument('--save-per-epoch', type=int, default=1, help='save model per epoch')
-parser.add_argument('--experiment-dir', default='experiment', help='directory where save model, log, images')
-parser.add_argument('--model-path', default=None, help='path of model to load')
-# parser.add_argument('--start-step', type=int, default=0, help='number of steps at starting')
-parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
-parser.add_argument('--num-epochs', type=int, default=300, help='number of training epochs')
-parser.add_argument('--num-workers', type=int, default=16, help='num workers in loading data')
-# parser.add_argument('--')
-
-args = parser.parse_args()
+args = get_args()
 
 # safely create saved model, log path before training
 model_dir = os.path.join(args.experiment_dir, 'model')
@@ -53,25 +34,38 @@ log_f = open(os.path.join(log_dir, log_file_name), 'w')
 # imagenet
 mean = [0.406, 0.456, 0.485]
 std = [0.225, 0.224, 0.229]
-device_ids = [0]
+device_ids = [3]
 
 device = torch.device('cuda')
 
+
 def main(args):
 
-    #train_transform = T.Compose([RandomCrop([256, 512]), Normalize(mean, std), ToTensor()])
-    #train_dataset = KITTI2015(args.datadir, mode='train', transform=train_transform)
-    #train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    train_dataset =  Scannetv2(args.datadir, "dataloader/data_list/scannet_train_list.csv")
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=train_dataset.customed_collate_fn)
- 
-    val_dataset =  Scannetv2(args.datadir, "dataloader/data_list/scannet_test_list.csv")
-    validate_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.num_workers, collate_fn=val_dataset.customed_collate_fn)
-
-
-    #validate_transform = T.Compose([Normalize(mean, std), ToTensor(), Pad(384, 1248)])
-    #validate_dataset = KITTI2015(args.datadir, mode='validate', transform=validate_transform)
-    #validate_loader = DataLoader(validate_dataset, batch_size=args.validate_batch_size, num_workers=args.num_workers)
+    train_dataset =  \
+        Scannetv2(
+            args.datadir,
+            "dataloader/data_list/scannet_train_list.csv"
+        )
+    train_loader = \
+        DataLoader(
+            train_dataset,
+            batch_size=args.batch_size,
+            shuffle=True,
+            num_workers=args.num_workers,
+            collate_fn=train_dataset.customed_collate_fn
+        )
+    val_dataset = \
+        Scannetv2(
+            args.datadir,
+            "dataloader/data_list/scannet_test_list.csv"
+        )
+    validate_loader = \
+        DataLoader(
+            val_dataset,
+            batch_size=args.batch_size,
+            num_workers=args.num_workers,
+            collate_fn=val_dataset.customed_collate_fn
+        )
 
     step = 0
     best_error = 100.0
@@ -89,7 +83,9 @@ def main(args):
         best_error = state['error']
         print('load model from {}'.format(args.model_path))
 
-    print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
+    print('Number of model parameters: {}'.format(
+        sum([p.data.nelement() for p in model.parameters()])
+    ))
 
     for epoch in range(1, args.num_epochs + 1):
         model.train()
@@ -123,7 +119,10 @@ def validate(model, validate_loader, epoch):
             _, _, disp = model(left_img, right_img)
 
         delta = torch.abs(disp[mask] - target_disp[mask])
-        error_mat = (((delta >= 3.0) + (delta >= 0.05 * (target_disp[mask]))) == 2)
+        error_mat = (
+                    ((delta >= 3.0)
+                    + (delta >= 0.05 * (target_disp[mask]))) == 2
+                )
         error = torch.sum(error_mat).item() / torch.numel(disp[mask]) * 100
 
         avg_error += error
@@ -135,8 +134,12 @@ def validate(model, validate_loader, epoch):
         i += 1
     avg_error = avg_error / num_batches
     # write log to stdout, log file
-    print('epoch: {:03} | 3px-error: {:.5}%'.format(epoch, avg_error))
-    print('epoch: {:03} | 3px-error: {:.5}%'.format(epoch, avg_error), file=log_f)
+    print('epoch: {:03} | 3px-error: {:.5}%'.format(
+        epoch, avg_error
+    ))
+    print('epoch: {:03} | 3px-error: {:.5}%'.format(
+        epoch, avg_error
+    ), file=log_f)
 
     return avg_error
 
@@ -154,7 +157,6 @@ def save_image(left_image, disp, epoch):
 
     # save disparity image
     disp_img = disp.detach().cpu().numpy()
-    fig = plt.figure(figsize=(12.84, 3.84))
     plt.axis('off')  # hide axis
     plt.imshow(disp_img, cmap='jet')
     plt.colorbar()
@@ -169,16 +171,21 @@ def train(model, train_loader, optimizer, criterion, step):
     for batch in tqdm(train_loader):
         step += 1
         optimizer.zero_grad()
-
-        left_img = batch['left'].to(device)
-        right_img = batch['right'].to(device)
+        # read batch
+        frame1 = batch['frame1'].to(device)
+        frame2 = batch['frame2'].to(device)
+        frame3 = batch['frame3'].to(device)
+        extr1 = batch['extr1'].to(device)
+        extr2 = batch['extr2'].to(device)
         target_disp = batch['disp'].to(device)
-
         mask = (target_disp > 0)
         mask = mask.detach_()
-
-        disp1, disp2, disp3 = model(left_img, right_img)
-        loss1, loss2, loss3 = criterion(disp1[mask], disp2[mask], disp3[mask], target_disp[mask])
+        # feed into model
+        disp1, disp2, disp3 = model(frame1, frame2, frame3, extr1, extr2)
+        print(disp1.size)
+        exit()
+        loss1, loss2, loss3 = \
+            criterion(disp1[mask], disp2[mask], disp3[mask], target_disp[mask])
         total_loss = 0.5 * loss1 + 0.7 * loss2 + 1.0 * loss3
 
         total_loss.backward()
@@ -187,11 +194,14 @@ def train(model, train_loader, optimizer, criterion, step):
         # print(step)
 
         if step % args.log_per_step == 0:
-            #writer.add_scalar('loss/loss1', loss1, step)
-            #writer.add_scalar('loss/loss2', loss2, step)
-            #writer.add_scalar('loss/loss3', loss3, step)
-            #writer.add_scalar('loss/total_loss', total_loss, step)
-            print('step: {:05} | total loss: {:.5} | loss1: {:.5} | loss2: {:.5} | loss3: {:.5}'.format(step, total_loss.item(), loss1.item(), loss2.item(), loss3.item()))
+            print('step: {:05} | total loss: {:.5} \
+                    | loss1: {:.5} | loss2: {:.5} | \
+                    loss3: {:.5}'.format(
+                        step, total_loss.item(),
+                        loss1.item(), loss2.item(),
+                        loss3.item()
+                    )
+            )
     return step
 
 

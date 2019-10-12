@@ -16,33 +16,40 @@ class PSMNet(nn.Module):
 
         self.__init_params()
 
-    def forward(self, left_img, right_img):
-        original_size = [self.D, left_img.size(2), left_img.size(3)]
-
-        left_cost = self.cost_net(left_img)  # [B, 32, 1/4H, 1/4W]
-        right_cost = self.cost_net(right_img)  # [B, 32, 1/4H, 1/4W]
+    def forward(self, frame1, frame2, frame3, extr1, extr2):
+        original_size = [self.D, frame1.size(2), frame1.size(3)]
+        frame1_cost = self.cost_net(frame1)  # [B, 32, 1/4H, 1/4W]
+        frame2_cost = self.cost_net(frame2)  # [B, 32, 1/4H, 1/4W]
+        frame3_cost = self.cost_net(frame3)  # [B, 32, 1/4H, 1/4W]
         # cost = torch.cat([left_cost, right_cost], dim=1)  # [B, 64, 1/4H, 1/4W]
         # B, C, H, W = cost.size()
 
         # print('left_cost')
         # print(left_cost[0, 0, :3, :3])
 
-        B, C, H, W = left_cost.size()
+        B, C, H, W = frame1_cost.size()
 
-        cost_volume = torch.zeros(B, C * 2, self.D // 4, H, W).type_as(left_cost)  # [B, 64, D, 1/4H, 1/4W]
+        cost_volume = torch.zeros(
+                        B, C * 3, self.D // 4, H, W
+                      ).type_as(frame1_cost)  # [B, 64, D, 1/4H, 1/4W]
 
         # for i in range(self.D // 4):
         #     cost_volume[:, :, i, :, i:] = cost[:, :, :, i:]
 
         for i in range(self.D // 4):
             if i > 0:
-                cost_volume[:, :C, i, :, i:] = left_cost[:, :, :, i:]
-                cost_volume[:, C:, i, :, i:] = right_cost[:, :, :, :-i]
+                cost_volume[:, :C, i, :, i:] = frame1_cost[:, :, :, i:]
+                cost_volume[:, C:2*C, i, :, i:] = frame2_cost[:, :, :, :-i]
+                cost_volume[:, 2*C:, i, :, i:] = frame3_cost[:, :, :, :-i]
             else:
-                cost_volume[:, :C, i, :, :] = left_cost
-                cost_volume[:, C:, i, :, :] = right_cost
+                cost_volume[:, :C, i, :, :] = frame1_cost
+                cost_volume[:, C:2*C, i, :, :] = frame2_cost
+                cost_volume[:, 2*C:, i, :, :] = frame3_cost
 
-        disp1, disp2, disp3 = self.stackedhourglass(cost_volume, out_size=original_size)
+        disp1, disp2, disp3 = self.stackedhourglass(
+                                cost_volume,
+                                out_size=original_size
+                              )
 
         return disp1, disp2, disp3
 

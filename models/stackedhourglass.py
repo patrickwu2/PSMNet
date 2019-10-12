@@ -5,15 +5,15 @@ import torch.nn.functional as F
 
 class StackedHourglass(nn.Module):
     '''
-    inputs --- [B, 64, 1/4D, 1/4H, 1/4W]
+    inputs --- [B, 32*3, 1/4D, 1/4H, 1/4W]
     '''
 
     def __init__(self, max_disp):
         super().__init__()
 
         self.conv0 = nn.Sequential(
-            Conv3dBn(in_channels=64, out_channels=32, kernel_size=3, stride=1, padding=1, dilation=1, use_relu=True),
-            Conv3dBn(in_channels=32, out_channels=32, kernel_size=3, stride=1, padding=1, dilation=1, use_relu=True)
+            Conv3dBn(in_channels=128, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1, use_relu=True),
+            Conv3dBn(in_channels=64, out_channels=32, kernel_size=3, stride=1, padding=1, dilation=1, use_relu=True)
         )
         self.conv1 = nn.Sequential(
             Conv3dBn(in_channels=32, out_channels=32, kernel_size=3, stride=1, padding=1, dilation=1, use_relu=True),
